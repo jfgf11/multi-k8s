@@ -1,11 +1,8 @@
-language: generic
 sudo: required
+language: generic
+
 services:
   - docker
-
-branches:
-  only:
-    - master
 
 before_install:
   - docker build -t jfgf11/react-test -f ./client/Dockerfile.dev ./client
@@ -18,12 +15,9 @@ after_success:
   - docker build -t jfgf11/multi-nginx ./nginx
   - docker build -t jfgf11/multi-server ./server
   - docker build -t jfgf11/multi-worker ./worker
-  # docker log in to docker cli
-
-  -echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
-
-  # Take does images and push them to docker hub.
-
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
   - docker push jfgf11/multi-client
   - docker push jfgf11/multi-nginx
   - docker push jfgf11/multi-server
