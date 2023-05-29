@@ -1,10 +1,27 @@
 sudo: required
 services:
   - docker
+env:
+  global:
+    - SHA=$(git rev-parse HEAD) # This will allow me to later give the current commit id to pull the latest image for k8s
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
 before_install:
   - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
   - curl https://sdk.cloud.google.com | bash > /dev/null; # Download google cloud sdk
   - source $HOME/google-cloud-sdk/path.bash.inc
   - gcloud components update kubectl
-  - gcloud auth activate-service-account --key-file service-account.json
-  
+  - gcloud auth activate-service-account --key-file service-account.json #service account file encrypted for connecting to GCP
+  - gcloud config get project multi-k8s-387820
+  - gcloud config set compute/zone us-central1-a # zone of the kubernetes engine
+  - gcloud container clusters get-credentials multi-cluster # kubernetes cluster name
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t jfgf11/react-test -f ./client/Dockerfile.dev ./client # Building the image for running the test, tests are in dev
+
+script:
+  - docker run -e CI=true jfgf11/react-test npm test # running the tests of the image, in reality I would have tests also for the other folders
+
+deploy:
+  provider: script
+  script: bash ./deploy.sh
+  on: 
+    branch: master
